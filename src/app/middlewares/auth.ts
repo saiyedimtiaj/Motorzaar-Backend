@@ -2,15 +2,28 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status";
 import catchAsync from "../utils/catchAsync";
 import config from "../config";
-import AppError from "../errors/AppError";
+import { AppError } from "../errors/AppError";
+import { USER_ROLE } from "../modules/auth/auth.interface";
+import { Users } from "../modules/auth/auth.modal";
 
 export interface CustomRequest extends Request {
   token: string | JwtPayload;
 }
 
-const auth = (...requiredRoles: string[]) => {
+export const verifyToken = (
+  token: string,
+  secret: string
+): JwtPayload | Error => {
+  try {
+    return jwt.verify(token, secret) as JwtPayload;
+  } catch (error: any) {
+    throw new AppError(401, "You are not authorized!");
+  }
+};
+
+const auth = (...requiredRoles: (keyof typeof USER_ROLE)[]) => {
   return catchAsync(async (req, res, next) => {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const token = req.headers.authorization;
 
     if (!token) {
       throw new AppError(
@@ -18,11 +31,20 @@ const auth = (...requiredRoles: string[]) => {
         "You have no access to this route"
       );
     }
-    const decoded = jwt.verify(
+    // console.log("token", token);
+
+    const decoded = (await verifyToken(
       token,
       config.jwt_access_secret as string
-    ) as JwtPayload;
-    const { role } = decoded;
+    )) as JwtPayload;
+
+    const { role, email } = decoded;
+
+    const user = await Users.findOne({ email });
+
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, "This user is not found !");
+    }
 
     if (requiredRoles.length > 0 && !requiredRoles.includes(role)) {
       throw new AppError(

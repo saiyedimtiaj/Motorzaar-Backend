@@ -1,12 +1,21 @@
 export type TUser = {
-  name: string;
+  fullName: string;
   email: string;
-  role: "user" | "admin";
+  role: string;
   password: string;
-  image: string;
+  phone?: string;
+  address: string;
+  website: string;
+  avater: string;
 };
 
 export type TLogin = {
   email: string;
   password: string;
 };
+
+export const USER_ROLE = {
+  admin: "admin",
+  user: "user",
+  dealer: "dealer",
+} as const;

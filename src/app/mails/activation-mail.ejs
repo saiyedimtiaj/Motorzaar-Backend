@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Activation</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .logo {
+        font-size: 28px;
+        text-align: center;
+      }
+      h1 {
+        font-size: 24px;
+        color: #d72323;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+      }
+      .code {
+        display: block;
+        font-size: 28px;
+        font-weight: bold;
+        color: #d72323;
+        text-align: center;
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        letter-spacing: 2px;
+      }
+      .footer {
+        font-size: 14px;
+        color: #999;
+        text-align: center;
+        margin-top: 40px;
+      }
+      .footer a {
+        color: #0000c8;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="logo">Company 1</h1>
+      <h1>Activate Your Account</h1>
+
+      <p>Hi <%= lastName %>,</p>
+
+      <p>
+        We're excited to have you on board! Please use the activation code below
+        to complete your account setup.
+      </p>
+
+      <span class="code"><%= activationCode %></span>
+
+      <p>
+        Please note that this code will expire in 5 minutes. If you didn't
+        request this email, feel free to ignore it.
+      </p>
+
+      <p>Thank you for choosing us!</p>
+
+      <div class="footer">
+        <p>
+          Unit 7 Wheatcroft Business Park Landmere Lane Edwalton, Nottingham
+          NG12 4DG
+        </p>
+        <p>
+          &copy; <%= new Date().getFullYear() %> Campic. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
