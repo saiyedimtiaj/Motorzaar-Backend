@@ -20,7 +20,13 @@ const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const request_model_1 = __importDefault(require("./request.model"));
 const createRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const result = yield request_model_1.default.create(Object.assign(Object.assign({}, req.body), { userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id }));
+    const result = yield request_model_1.default.create(Object.assign(Object.assign({}, req.body), { userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id, timeline: [
+            {
+                status: "new",
+                note: "New request received",
+                date: new Date(),
+            },
+        ] }));
     (0, sendResponse_1.default)(res, {
         data: result,
         success: true,
@@ -29,7 +35,6 @@ const createRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     });
 }));
 exports.getAllRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("jhsdxghsr");
     const query = {};
     const { searchQuery, page = "1", limit = "10" } = req.query;
     // If there's a search query, search across multiple fields

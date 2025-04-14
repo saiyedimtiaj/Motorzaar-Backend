@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 import { TRequest } from "./request.interface";
 
 const requestSchema = new Schema<TRequest>(
@@ -38,11 +38,19 @@ const requestSchema = new Schema<TRequest>(
     yearRangeTouched: { type: Boolean, default: false },
     hasPartExchange: { type: Boolean, required: true },
     partExchangeReg: { type: String, default: "" },
+    status: { type: String, default: "new", required: true },
+    timeline: [
+      {
+        status: { type: String, required: true },
+        date: { type: Date, required: true },
+        note: { type: String, required: true },
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
 
-const Request = model("Request", requestSchema);
+const Request = model<TRequest>("Request", requestSchema);
 export default Request;

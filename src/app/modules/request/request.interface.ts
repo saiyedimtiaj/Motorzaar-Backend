@@ -18,4 +18,10 @@ export interface TRequest {
   hasPartExchange: boolean;
   partExchangeReg?: string;
   searchType: string;
+  status: string;
+  timeline: {
+    status: string;
+    date: Date;
+    note: string;
+  }[];
 }
