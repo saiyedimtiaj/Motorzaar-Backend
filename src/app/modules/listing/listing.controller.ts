@@ -7,6 +7,8 @@ import Request from "../request/request.model";
 import Listing from "./listing.model"; // Assuming your Listing model is here
 import mongoose, { Types } from "mongoose";
 import { AppError } from "../../errors/AppError";
+import { DealerRequest } from "../dealerRequest/dealerRequest.model";
+import { Users } from "../auth/auth.modal";
 
 const createNewListing = catchAsync(async (req, res) => {
   const session = await mongoose.startSession();
@@ -104,31 +106,58 @@ const approveListing = catchAsync(async (req, res) => {
 });
 
 const dealerOfferRequest = catchAsync(async (req, res) => {
-  const query: Record<string, any> = {};
+  const dealer = await Users.findById(req.user?._id);
+  if (!dealer) {
+    throw new Error("Dealer not found!");
+  }
+
   const { searchQuery, page = "1", limit = "10" } = req.query;
 
-  // If there's a search query, search across multiple fields
+  const query: Record<string, any> = {
+    createdAt: { $gte: dealer?.createdAt },
+    status: { $ne: "Pending" },
+  };
+
+  // Search logic
   if (searchQuery) {
     const searchRegex = { $regex: searchQuery, $options: "i" };
     query.$or = [{ model: searchRegex }];
   }
-
-  // Exclude requests with status "Pending"
-  query.status = { $ne: "Pending" };
 
   // Pagination
   const currentPage = parseInt(page as string, 10);
   const pageSize = parseInt(limit as string, 10);
   const skip = (currentPage - 1) * pageSize;
 
-  // Count total documents
+  // Total count
   const totalListing = await Listing.countDocuments(query);
 
-  // Get paginated + populated results
-  const listing = await Listing.find(query).skip(skip).limit(pageSize).exec();
+  // Fetch listings
+  const listings = await Listing.find(query).skip(skip).limit(pageSize).lean();
 
+  // Fetch all dealer requests for this dealer in one query
+  const dealerRequests = await DealerRequest.find({
+    dealerId: new Types.ObjectId(req.user?._id),
+  }).lean();
+
+  // Map of listingId -> status
+  const requestStatusMap: Record<string, string> = {};
+  dealerRequests.forEach((req) => {
+    requestStatusMap[req.listingId.toString()] = req.status;
+  });
+
+  // Attach dealerRequest status to each listing
+  const enrichedListings = listings.map((listing) => {
+    const dealerStatus = requestStatusMap[listing._id.toString()];
+    return {
+      ...listing,
+      status: dealerStatus || listing.status,
+    };
+  });
+
+  // Final response
   sendResponse(res, {
-    data: listing,
+    data: enrichedListings,
     meta: {
       total: totalListing,
       page: currentPage,
@@ -137,7 +166,53 @@ const dealerOfferRequest = catchAsync(async (req, res) => {
     },
     success: true,
     statusCode: httpStatus.OK,
-    message: "Listing retrieved successfully!",
+    message: "Listings retrieved successfully!",
+  });
+});
+
+const getUserListing = catchAsync(async (req, res) => {
+  const listing = await Listing.find({
+    userId: new Types.ObjectId(req.user?._id),
+  }).populate("requestId", "_id budget");
+
+  // Get all listing IDs
+  const listingIds = listing.map((item) => item._id);
+
+  const listingRequest = await DealerRequest.find({
+    listingId: { $in: listingIds },
+  }).select("_id listingId");
+
+  const result = listing.map((list) => {
+    const matchCount = listingRequest.filter(
+      (req) => req.listingId.toString() === list._id.toString()
+    ).length;
+
+    return {
+      ...list.toObject(),
+      count: matchCount,
+    };
+  });
+
+  sendResponse(res, {
+    data: result,
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Listings retrieved successfully!",
+  });
+});
+
+const getListingOffers = catchAsync(async (req, res) => {
+  const listing = await Listing.findById(req.params?.id)
+    .select("_id make model year")
+    .populate("requestId", "_id budget");
+  const listingRequest = await DealerRequest.find({
+    listingId: req.params.id,
+  }).populate("dealerId");
+  sendResponse(res, {
+    data: { listing, listingRequest },
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Listings offeres retrieved successfully!",
   });
 });
 
@@ -146,4 +221,6 @@ export const listingController = {
   getListingByRequestId,
   approveListing,
   dealerOfferRequest,
+  getUserListing,
+  getListingOffers,
 };

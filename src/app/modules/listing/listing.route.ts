@@ -30,4 +30,11 @@ route.get(
   listingController.dealerOfferRequest
 );
 
+route.get("/", auth("user"), listingController.getUserListing);
+route.get(
+  "/listing-offer/:id",
+  auth("user"),
+  listingController.getListingOffers
+);
+
 export const listingRoute = route;

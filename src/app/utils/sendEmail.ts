@@ -41,4 +41,25 @@ const sendEmail = async (options: EmailOption): Promise<void> => {
   }
 };
 
+export const sendEmailFromDealer = async (options: {
+  email: string;
+  subject: string;
+  html: string;
+}): Promise<void> => {
+  const { email, subject, html } = options;
+  try {
+    const mailOptions = {
+      from: email,
+      to: process.env.SMTP_MAIL, // Your email to receive contact forms
+      subject,
+      html,
+    };
+
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending email from dealer:", error);
+    throw error;
+  }
+};
+
 export default sendEmail;

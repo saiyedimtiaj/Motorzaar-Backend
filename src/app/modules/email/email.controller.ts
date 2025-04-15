@@ -1,0 +1,42 @@
+import httpStatus from "http-status";
+import catchAsync from "../../utils/catchAsync";
+import sendResponse from "../../utils/sendResponse";
+import Email from "./email.model";
+import { sendEmailFromDealer } from "../../utils/sendEmail";
+
+export const contactSendEmail = catchAsync(async (req, res) => {
+  const { dealershipName, contactName, email, phone, message } = req.body;
+
+  // Save email to database
+  const savedEmail = await Email.create({
+    dealershipName,
+    contactName,
+    email,
+    phone,
+    message,
+  });
+
+  // Send email to your inbox
+  await sendEmailFromDealer({
+    email,
+    subject: `Contact Inquiry from ${dealershipName} via Motozaar`,
+    html: `
+        <div>
+          <p><strong>Dealership Name:</strong> ${dealershipName}</p>
+          <p><strong>Contact Name:</strong> ${contactName}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>Message:</strong><br/>${message}</p>
+        </div>
+      `,
+  });
+
+  // Send response
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: savedEmail,
+    message:
+      "Thank you for reaching out! Your message has been received. We'll get back to you within 24 hours.",
+  });
+});

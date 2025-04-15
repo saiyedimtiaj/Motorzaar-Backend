@@ -7,6 +7,7 @@ export type TUser = {
   address: string;
   website: string;
   avater: string;
+  createdAt: Date;
 };
 
 export type TLogin = {
