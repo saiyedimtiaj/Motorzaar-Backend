@@ -4,6 +4,7 @@ import { requestRoute } from "../modules/request/request.route";
 import { listingRoute } from "../modules/listing/listing.route";
 import { emailRoute } from "../modules/email/email.route";
 import { dealerRequestRoute } from "../modules/dealerRequest/dealerRequest.route";
+import { paymentRoute } from "../modules/payment/payment.route";
 
 const router = Router();
 
@@ -27,6 +28,10 @@ const moduleRoutes = [
   {
     path: "/dealer-request",
     route: dealerRequestRoute,
+  },
+  {
+    path: "/payment",
+    route: paymentRoute,
   },
 ];
 

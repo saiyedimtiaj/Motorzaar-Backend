@@ -13,4 +13,6 @@ route.post("/create", (0, auth_1.default)("admin"), multer_config_1.multerUpload
 route.get("/getby-requestId/:id", (0, auth_1.default)("admin"), listing_controller_1.listingController.getListingByRequestId);
 route.patch("/update-status/:id", (0, auth_1.default)("admin"), listing_controller_1.listingController.approveListing);
 route.get("/offer-listing", (0, auth_1.default)("dealer"), listing_controller_1.listingController.dealerOfferRequest);
+route.get("/", (0, auth_1.default)("user"), listing_controller_1.listingController.getUserListing);
+route.get("/listing-offer/:id", (0, auth_1.default)("user"), listing_controller_1.listingController.getListingOffers);
 exports.listingRoute = route;

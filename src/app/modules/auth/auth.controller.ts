@@ -89,10 +89,7 @@ const updateUser = catchAsync(async (req, res) => {
     const parseData = JSON.parse(req.body.data);
     payload = {
       ...payload,
-      fullName: parseData.name,
-      phone: parseData.phone,
-      address: parseData.address,
-      website: parseData?.website,
+      ...parseData,
     };
   }
   const result = await Users.findByIdAndUpdate(

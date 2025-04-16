@@ -95,7 +95,7 @@ const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
     }
     if (req.body) {
         const parseData = JSON.parse(req.body.data);
-        payload = Object.assign(Object.assign({}, payload), { fullName: parseData.name, phone: parseData.phone, address: parseData.address, website: parseData === null || parseData === void 0 ? void 0 : parseData.website });
+        payload = Object.assign(Object.assign({}, payload), parseData);
     }
     const result = yield auth_modal_1.Users.findByIdAndUpdate((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, Object.assign({}, payload), {
         new: true,

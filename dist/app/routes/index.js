@@ -4,6 +4,9 @@ const express_1 = require("express");
 const auth_route_1 = require("../modules/auth/auth.route");
 const request_route_1 = require("../modules/request/request.route");
 const listing_route_1 = require("../modules/listing/listing.route");
+const email_route_1 = require("../modules/email/email.route");
+const dealerRequest_route_1 = require("../modules/dealerRequest/dealerRequest.route");
+const payment_route_1 = require("../modules/payment/payment.route");
 const router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -17,6 +20,18 @@ const moduleRoutes = [
     {
         path: "/listing",
         route: listing_route_1.listingRoute,
+    },
+    {
+        path: "/email",
+        route: email_route_1.emailRoute,
+    },
+    {
+        path: "/dealer-request",
+        route: dealerRequest_route_1.dealerRequestRoute,
+    },
+    {
+        path: "/payment",
+        route: payment_route_1.paymentRoute,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

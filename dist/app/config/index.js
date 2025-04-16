@@ -19,4 +19,5 @@ exports.default = {
     smtp_password: process.env.SMTP_PASSWORD,
     client_live_link: process.env.CLIENT_LIVE_LINK,
     server_url: process.env.SERVER_URL,
+    stripe_secret: process.env.STRIPE_SECRET_KEY,
 };

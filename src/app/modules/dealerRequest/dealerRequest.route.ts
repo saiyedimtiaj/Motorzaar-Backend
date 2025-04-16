@@ -22,4 +22,10 @@ route.get(
   dealerRequestController.dealerRequestDetails
 );
 
+route.get(
+  "/customer-offer",
+  auth("user"),
+  dealerRequestController.customerOffers
+);
+
 export const dealerRequestRoute = route;

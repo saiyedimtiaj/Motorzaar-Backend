@@ -16,10 +16,14 @@ const userSchema = new mongoose_1.Schema({
         trim: true,
     },
     role: { type: String, required: true, default: "user" },
-    address: { type: String },
     phone: { type: String },
     website: { type: String },
     avater: { type: String },
+    addressline1: { type: String },
+    addressline2: { type: String },
+    country: { type: String },
+    postcode: { type: String },
+    town: { type: String },
 }, {
     timestamps: true,
 });

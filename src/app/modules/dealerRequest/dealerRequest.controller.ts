@@ -5,6 +5,8 @@ import Request from "../request/request.model";
 import { AppError } from "../../errors/AppError";
 import { DealerRequest } from "./dealerRequest.model";
 import sendResponse from "../../utils/sendResponse";
+import Listing from "../listing/listing.model";
+
 const addDepositPaid = catchAsync(async (req, res) => {
   const session = await mongoose.startSession();
 
@@ -17,6 +19,27 @@ const addDepositPaid = catchAsync(async (req, res) => {
 
     if (!request) {
       throw new AppError(httpStatus.NOT_FOUND, "Request not found!");
+    }
+
+    const listing = await Listing.findById(req?.body?.listingId)
+      .select("_id status")
+      .session(session);
+
+    if (!listing) {
+      throw new AppError(httpStatus.NOT_FOUND, "Listing not found!");
+    }
+
+    if (listing.status !== "Approved") {
+      await Listing.findByIdAndUpdate(
+        req.body?.listingId,
+        {
+          status: "Approved",
+        },
+        {
+          new: true,
+          session,
+        }
+      );
     }
 
     // Push new timeline update
@@ -73,8 +96,32 @@ const dealerRequestDetails = catchAsync(async (req, res) => {
   });
 });
 
+const customerOffers = catchAsync(async (req, res) => {
+  const result = await DealerRequest.find({
+    userId: new Types.ObjectId(req.user?._id),
+    status: {
+      $in: [
+        "Offer Accepted",
+        "Auction Won",
+        "Test Drive & Collection Ready",
+        "Auction Lost",
+      ],
+    },
+  })
+    .populate("listingId")
+    .populate("dealerId", "_id email phone");
+
+  sendResponse(res, {
+    data: result,
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Successfully fetched customer offers!",
+  });
+});
+
 export const dealerRequestController = {
   addDepositPaid,
   viewDepositDetails,
   dealerRequestDetails,
+  customerOffers,
 };

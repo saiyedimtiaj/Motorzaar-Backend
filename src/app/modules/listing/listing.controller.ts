@@ -91,7 +91,7 @@ const approveListing = catchAsync(async (req, res) => {
   const result = await Listing.findByIdAndUpdate(
     req.params.id,
     {
-      status: "Approved",
+      status: "Pre-Approval",
     },
     {
       new: true,
@@ -133,7 +133,11 @@ const dealerOfferRequest = catchAsync(async (req, res) => {
   const totalListing = await Listing.countDocuments(query);
 
   // Fetch listings
-  const listings = await Listing.find(query).skip(skip).limit(pageSize).lean();
+  const listings = await Listing.find(query)
+    .populate("requestId")
+    .skip(skip)
+    .limit(pageSize)
+    .lean();
 
   // Fetch all dealer requests for this dealer in one query
   const dealerRequests = await DealerRequest.find({
@@ -173,6 +177,7 @@ const dealerOfferRequest = catchAsync(async (req, res) => {
 const getUserListing = catchAsync(async (req, res) => {
   const listing = await Listing.find({
     userId: new Types.ObjectId(req.user?._id),
+    status: { $nin: ["Pending", "Pre-Approval"] },
   }).populate("requestId", "_id budget");
 
   // Get all listing IDs

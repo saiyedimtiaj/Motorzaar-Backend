@@ -45,6 +45,8 @@ const request_model_1 = __importDefault(require("../request/request.model"));
 const listing_model_1 = __importDefault(require("./listing.model")); // Assuming your Listing model is here
 const mongoose_1 = __importStar(require("mongoose"));
 const AppError_1 = require("../../errors/AppError");
+const dealerRequest_model_1 = require("../dealerRequest/dealerRequest.model");
+const auth_modal_1 = require("../auth/auth.modal");
 const createNewListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const session = yield mongoose_1.default.startSession();
@@ -105,7 +107,7 @@ const getListingByRequestId = (0, catchAsync_1.default)((req, res) => __awaiter(
 }));
 const approveListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield listing_model_1.default.findByIdAndUpdate(req.params.id, {
-        status: "Approved",
+        status: "Pre-Approval",
     }, {
         new: true,
     });
@@ -117,25 +119,50 @@ const approveListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     });
 }));
 const dealerOfferRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const query = {};
+    var _a, _b;
+    const dealer = yield auth_modal_1.Users.findById((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
+    if (!dealer) {
+        throw new Error("Dealer not found!");
+    }
     const { searchQuery, page = "1", limit = "10" } = req.query;
-    // If there's a search query, search across multiple fields
+    const query = {
+        createdAt: { $gte: dealer === null || dealer === void 0 ? void 0 : dealer.createdAt },
+        status: { $ne: "Pending" },
+    };
+    // Search logic
     if (searchQuery) {
         const searchRegex = { $regex: searchQuery, $options: "i" };
         query.$or = [{ model: searchRegex }];
     }
-    // Exclude requests with status "Pending"
-    query.status = { $ne: "Pending" };
     // Pagination
     const currentPage = parseInt(page, 10);
     const pageSize = parseInt(limit, 10);
     const skip = (currentPage - 1) * pageSize;
-    // Count total documents
+    // Total count
     const totalListing = yield listing_model_1.default.countDocuments(query);
-    // Get paginated + populated results
-    const listing = yield listing_model_1.default.find(query).skip(skip).limit(pageSize).exec();
+    // Fetch listings
+    const listings = yield listing_model_1.default.find(query)
+        .populate("requestId")
+        .skip(skip)
+        .limit(pageSize)
+        .lean();
+    // Fetch all dealer requests for this dealer in one query
+    const dealerRequests = yield dealerRequest_model_1.DealerRequest.find({
+        dealerId: new mongoose_1.Types.ObjectId((_b = req.user) === null || _b === void 0 ? void 0 : _b._id),
+    }).lean();
+    // Map of listingId -> status
+    const requestStatusMap = {};
+    dealerRequests.forEach((req) => {
+        requestStatusMap[req.listingId.toString()] = req.status;
+    });
+    // Attach dealerRequest status to each listing
+    const enrichedListings = listings.map((listing) => {
+        const dealerStatus = requestStatusMap[listing._id.toString()];
+        return Object.assign(Object.assign({}, listing), { status: dealerStatus || listing.status });
+    });
+    // Final response
     (0, sendResponse_1.default)(res, {
-        data: listing,
+        data: enrichedListings,
         meta: {
             total: totalListing,
             page: currentPage,
@@ -144,7 +171,44 @@ const dealerOfferRequest = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         },
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Listing retrieved successfully!",
+        message: "Listings retrieved successfully!",
+    });
+}));
+const getUserListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const listing = yield listing_model_1.default.find({
+        userId: new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id),
+        status: { $nin: ["Pending", "Pre-Approval"] },
+    }).populate("requestId", "_id budget");
+    // Get all listing IDs
+    const listingIds = listing.map((item) => item._id);
+    const listingRequest = yield dealerRequest_model_1.DealerRequest.find({
+        listingId: { $in: listingIds },
+    }).select("_id listingId");
+    const result = listing.map((list) => {
+        const matchCount = listingRequest.filter((req) => req.listingId.toString() === list._id.toString()).length;
+        return Object.assign(Object.assign({}, list.toObject()), { count: matchCount });
+    });
+    (0, sendResponse_1.default)(res, {
+        data: result,
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Listings retrieved successfully!",
+    });
+}));
+const getListingOffers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const listing = yield listing_model_1.default.findById((_a = req.params) === null || _a === void 0 ? void 0 : _a.id)
+        .select("_id make model year")
+        .populate("requestId", "_id budget");
+    const listingRequest = yield dealerRequest_model_1.DealerRequest.find({
+        listingId: req.params.id,
+    }).populate("dealerId");
+    (0, sendResponse_1.default)(res, {
+        data: { listing, listingRequest },
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Listings offeres retrieved successfully!",
     });
 }));
 exports.listingController = {
@@ -152,4 +216,6 @@ exports.listingController = {
     getListingByRequestId,
     approveListing,
     dealerOfferRequest,
+    getUserListing,
+    getListingOffers,
 };

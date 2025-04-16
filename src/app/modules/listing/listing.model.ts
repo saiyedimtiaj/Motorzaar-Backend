@@ -21,7 +21,6 @@ const ListingSchema = new Schema<TListing>(
     additionalDetails: { type: String },
     auctionHouse: { type: String, required: true },
     auctionDate: { type: String, required: true },
-    hammerPrice: { type: String, required: true },
     allInPrice: { type: String, required: true },
     images: { type: [String], required: true },
     additionalDealerDetails: { type: String },

@@ -19,7 +19,6 @@ export type TListing = {
   additionalDetails: string;
   auctionHouse: string;
   auctionDate: string; // ISO date string
-  hammerPrice: string; // or number if you're parsing to numeric
   allInPrice: string; // or number
   images: string[]; // Array of image filenames or URLs
   additionalDealerDetails: string;

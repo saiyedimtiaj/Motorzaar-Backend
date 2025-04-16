@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendEmailFromDealer = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const ejs_1 = __importDefault(require("ejs"));
 const path_1 = __importDefault(require("path"));
@@ -43,4 +44,21 @@ const sendEmail = (options) => __awaiter(void 0, void 0, void 0, function* () {
         throw error;
     }
 });
+const sendEmailFromDealer = (options) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, subject, html } = options;
+    try {
+        const mailOptions = {
+            from: email,
+            to: process.env.SMTP_MAIL, // Your email to receive contact forms
+            subject,
+            html,
+        };
+        yield transporter.sendMail(mailOptions);
+    }
+    catch (error) {
+        console.error("Error sending email from dealer:", error);
+        throw error;
+    }
+});
+exports.sendEmailFromDealer = sendEmailFromDealer;
 exports.default = sendEmail;
