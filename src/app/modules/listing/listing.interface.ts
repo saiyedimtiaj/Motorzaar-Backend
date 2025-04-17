@@ -25,4 +25,5 @@ export type TListing = {
   carCondition: string;
   dealerUrl: string;
   status: string;
+  sentToDealerDate: Date;
 };

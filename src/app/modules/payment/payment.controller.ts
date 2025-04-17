@@ -45,7 +45,7 @@ const confirmPayment = catchAsync(async (req, res) => {
     const listing = await DealerRequest.findByIdAndUpdate(
       req.body?.listingId,
       {
-        status: "Offer Accepted",
+        status: "Deposit Paid",
       },
       {
         new: true,

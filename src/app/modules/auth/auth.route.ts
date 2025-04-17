@@ -26,4 +26,10 @@ route.put(
   userController.updateUser
 );
 
+route.get(
+  "/dealer-profile/:id",
+  auth("user", "admin", "dealer"),
+  userController.getDealerProfile
+);
+
 export const authRouter = route;

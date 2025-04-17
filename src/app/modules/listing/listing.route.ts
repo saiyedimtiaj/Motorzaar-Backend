@@ -11,6 +11,12 @@ route.post(
   multerUpload.array("images"),
   listingController.createNewListing
 );
+route.patch(
+  "/edit/:id",
+  auth("admin"),
+  multerUpload.array("images"),
+  listingController.updateListing
+);
 
 route.get(
   "/getby-requestId/:id",
@@ -21,7 +27,7 @@ route.get(
 route.patch(
   "/update-status/:id",
   auth("admin"),
-  listingController.approveListing
+  listingController.preApproveListingStatusUpdate
 );
 
 route.get(
@@ -35,6 +41,12 @@ route.get(
   "/listing-offer/:id",
   auth("user"),
   listingController.getListingOffers
+);
+
+route.get(
+  "/pre-approval",
+  auth("admin"),
+  listingController.getPreApprovalListing
 );
 
 export const listingRoute = route;

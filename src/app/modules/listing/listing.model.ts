@@ -3,7 +3,7 @@ import { TListing } from "./listing.interface";
 
 const ListingSchema = new Schema<TListing>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "Users", required: true },
     requestId: { type: Schema.Types.ObjectId, ref: "Request", required: true },
     make: { type: String, required: true },
     model: { type: String, required: true },
@@ -27,6 +27,7 @@ const ListingSchema = new Schema<TListing>(
     carCondition: { type: String, required: true },
     dealerUrl: { type: String, required: true },
     status: { type: String, required: true, default: "Pending" },
+    sentToDealerDate: { type: Date },
   },
   { timestamps: true }
 );

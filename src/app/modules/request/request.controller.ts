@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import Request from "./request.model";
+import { Types } from "mongoose";
+import { DealerRequest } from "../dealerRequest/dealerRequest.model";
 
 const createRequest = catchAsync(async (req, res) => {
   const result = await Request.create({
@@ -25,38 +26,38 @@ const createRequest = catchAsync(async (req, res) => {
 });
 
 export const getAllRequest = catchAsync(async (req, res) => {
-  const query: Record<string, any> = {};
-  const { searchQuery, page = "1", limit = "10" } = req.query;
-
-  // If there's a search query, search across multiple fields
-  if (searchQuery) {
-    const searchRegex = { $regex: searchQuery, $options: "i" };
-    query.$or = [{ model: searchRegex }];
-  }
-
-  // Pagination
-  const currentPage = parseInt(page as string, 10);
-  const pageSize = parseInt(limit as string, 10);
-  const skip = (currentPage - 1) * pageSize;
-
-  // Count total documents
-  const totalRequests = await Request.countDocuments(query);
-
-  // Get paginated + populated results
-  const requests = await Request.find(query)
-    .populate("userId") // assuming RequestModel.user is a ref to User
-    .skip(skip)
-    .limit(pageSize)
-    .exec();
+  const requests = await Request.find()
+    .populate("userId")
+    .sort({ createdAt: "desc" });
 
   sendResponse(res, {
     data: requests,
-    meta: {
-      total: totalRequests,
-      page: currentPage,
-      limit: pageSize,
-      totalPage: Math.ceil(totalRequests / pageSize),
-    },
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Requests retrieved successfully!",
+  });
+});
+
+export const getAllCustomerRequest = catchAsync(async (req, res) => {
+  const requests = await Request.find({
+    userId: new Types.ObjectId(req.user?._id),
+  }).sort({ createdAt: "desc" });
+
+  const result = await Promise.all(
+    requests.map(async (request) => {
+      const offerCount = await DealerRequest.find({
+        requestId: new Types.ObjectId(request?._id),
+      }).select("_id");
+
+      return {
+        ...request.toObject(), // ensure it's a plain object
+        count: offerCount?.length || 0,
+      };
+    })
+  );
+
+  sendResponse(res, {
+    data: result,
     success: true,
     statusCode: httpStatus.OK,
     message: "Requests retrieved successfully!",
@@ -66,4 +67,5 @@ export const getAllRequest = catchAsync(async (req, res) => {
 export const requestController = {
   createRequest,
   getAllRequest,
+  getAllCustomerRequest,
 };

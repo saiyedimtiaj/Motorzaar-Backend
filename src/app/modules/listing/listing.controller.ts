@@ -8,7 +8,7 @@ import Listing from "./listing.model"; // Assuming your Listing model is here
 import mongoose, { Types } from "mongoose";
 import { AppError } from "../../errors/AppError";
 import { DealerRequest } from "../dealerRequest/dealerRequest.model";
-import { Users } from "../auth/auth.modal";
+import { TListing } from "./listing.interface";
 
 const createNewListing = catchAsync(async (req, res) => {
   const session = await mongoose.startSession();
@@ -87,11 +87,12 @@ const getListingByRequestId = catchAsync(async (req, res) => {
   });
 });
 
-const approveListing = catchAsync(async (req, res) => {
+const preApproveListingStatusUpdate = catchAsync(async (req, res) => {
   const result = await Listing.findByIdAndUpdate(
     req.params.id,
     {
       status: "Pre-Approval",
+      sentToDealerDate: new Date(),
     },
     {
       new: true,
@@ -106,71 +107,29 @@ const approveListing = catchAsync(async (req, res) => {
 });
 
 const dealerOfferRequest = catchAsync(async (req, res) => {
-  const dealer = await Users.findById(req.user?._id);
-  if (!dealer) {
-    throw new Error("Dealer not found!");
-  }
-
-  const { searchQuery, page = "1", limit = "10" } = req.query;
-
-  const query: Record<string, any> = {
-    createdAt: { $gte: dealer?.createdAt },
-    status: { $ne: "Pending" },
-  };
-
-  // Search logic
-  if (searchQuery) {
-    const searchRegex = { $regex: searchQuery, $options: "i" };
-    query.$or = [{ model: searchRegex }];
-  }
-
-  // Pagination
-  const currentPage = parseInt(page as string, 10);
-  const pageSize = parseInt(limit as string, 10);
-  const skip = (currentPage - 1) * pageSize;
-
-  // Total count
-  const totalListing = await Listing.countDocuments(query);
-
-  // Fetch listings
-  const listings = await Listing.find(query)
-    .populate("requestId")
-    .skip(skip)
-    .limit(pageSize)
-    .lean();
-
-  // Fetch all dealer requests for this dealer in one query
+  // Get all DealerRequests for this dealer
   const dealerRequests = await DealerRequest.find({
-    dealerId: new Types.ObjectId(req.user?._id),
-  }).lean();
+    dealerId: new Types.ObjectId(req.user._id),
+  }).select("_id");
 
-  // Map of listingId -> status
-  const requestStatusMap: Record<string, string> = {};
-  dealerRequests.forEach((req) => {
-    requestStatusMap[req.listingId.toString()] = req.status;
-  });
+  // Extract all listingIds that the dealer has already requested
+  const requestedListingIds = dealerRequests.map((req) =>
+    req.listingId.toString()
+  );
 
-  // Attach dealerRequest status to each listing
-  const enrichedListings = listings.map((listing) => {
-    const dealerStatus = requestStatusMap[listing._id.toString()];
-    return {
-      ...listing,
-      status: dealerStatus || listing.status,
-    };
-  });
+  // Find listings with "Pre-Approval" status AND not already requested by this dealer
+  const listings = await Listing.find({
+    status: "Pre-Approval",
+    _id: { $nin: requestedListingIds },
+  })
+    .sort({ createdAt: "desc" })
+    .populate("requestId", "budget");
 
-  // Final response
   sendResponse(res, {
-    data: enrichedListings,
-    meta: {
-      total: totalListing,
-      page: currentPage,
-      limit: pageSize,
-      totalPage: Math.ceil(totalListing / pageSize),
-    },
+    data: listings,
     success: true,
     statusCode: httpStatus.OK,
-    message: "Listings retrieved successfully!",
+    message: "Filtered listings retrieved successfully!",
   });
 });
 
@@ -185,7 +144,11 @@ const getUserListing = catchAsync(async (req, res) => {
 
   const listingRequest = await DealerRequest.find({
     listingId: { $in: listingIds },
-  }).select("_id listingId");
+  }).select("_id listingId allInPrice");
+
+  const allInPrice = listingRequest?.map((list) => list.allInPrice);
+  const min = Math.min(...allInPrice);
+  const max = Math.min(...allInPrice);
 
   const result = listing.map((list) => {
     const matchCount = listingRequest.filter(
@@ -195,6 +158,8 @@ const getUserListing = catchAsync(async (req, res) => {
     return {
       ...list.toObject(),
       count: matchCount,
+      min,
+      max,
     };
   });
 
@@ -221,11 +186,62 @@ const getListingOffers = catchAsync(async (req, res) => {
   });
 });
 
+const updateListing = catchAsync(async (req, res) => {
+  const { data } = req.body;
+  const parseData = JSON.parse(data);
+  const payload: TListing = { ...parseData };
+
+  let newImages: string[] = [];
+  if (req.files) {
+    newImages = (req.files as Express.Multer.File[]).map(
+      (file) => `${config.server_url}/${file.path}`
+    );
+  }
+
+  payload.images = [...parseData.existingImages, ...newImages];
+
+  const result = await Listing.findByIdAndUpdate(
+    req.params.id,
+    {
+      $set: {
+        ...payload,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  sendResponse(res, {
+    data: result,
+    success: true,
+    statusCode: httpStatus.CREATED,
+    message: "Car updated successfully!",
+  });
+});
+
+const getPreApprovalListing = catchAsync(async (req, res) => {
+  const listing = await Listing.find({
+    status: "Pre-Approval",
+  })
+    .populate("requestId", "_id budget")
+    .populate("userId")
+    .sort({ createdAt: "desc" });
+  sendResponse(res, {
+    data: listing,
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Listings offeres retrieved successfully!",
+  });
+});
+
 export const listingController = {
   createNewListing,
   getListingByRequestId,
-  approveListing,
+  preApproveListingStatusUpdate,
   dealerOfferRequest,
   getUserListing,
   getListingOffers,
+  updateListing,
+  getPreApprovalListing,
 };

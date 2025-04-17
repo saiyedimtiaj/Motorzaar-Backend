@@ -55,7 +55,7 @@ const confirmPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     session.startTransaction();
     try {
         const listing = yield dealerRequest_model_1.DealerRequest.findByIdAndUpdate((_a = req.body) === null || _a === void 0 ? void 0 : _a.listingId, {
-            status: "Offer Accepted",
+            status: "Deposit Paid",
         }, {
             new: true,
             session,

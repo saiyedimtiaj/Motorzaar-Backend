@@ -81,16 +81,9 @@ const getCurrentUser = catchAsync(async (req, res) => {
 });
 
 const updateUser = catchAsync(async (req, res) => {
-  let payload: Record<string, any> = {};
+  const payload: Record<string, any> = JSON.parse(req.body.data);
   if (req.file) {
     payload.avater = `${config.server_url}/${req.file.path}`;
-  }
-  if (req.body) {
-    const parseData = JSON.parse(req.body.data);
-    payload = {
-      ...payload,
-      ...parseData,
-    };
   }
   const result = await Users.findByIdAndUpdate(
     req.user?._id,
@@ -107,6 +100,16 @@ const updateUser = catchAsync(async (req, res) => {
   });
 });
 
+const getDealerProfile = catchAsync(async (req, res) => {
+  const result = await Users.findById(req.params?.id);
+  sendResponse(res, {
+    data: result,
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "get user sucessfully!",
+  });
+});
+
 export const userController = {
   createUser,
   loginUser,
@@ -116,4 +119,5 @@ export const userController = {
   resetPassword,
   getCurrentUser,
   updateUser,
+  getDealerProfile,
 };

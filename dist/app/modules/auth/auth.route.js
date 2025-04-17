@@ -17,4 +17,5 @@ route.post("/reset-password", auth_controller_1.userController.resetPassword);
 route.post("/change-password", auth_controller_1.userController.changePassword);
 route.get("/current-user", (0, auth_1.default)("user", "admin", "dealer"), auth_controller_1.userController.getCurrentUser);
 route.put("/update-profile", (0, auth_1.default)("user", "admin", "dealer"), multer_config_1.multerUpload.single("image"), auth_controller_1.userController.updateUser);
+route.get("/dealer-profile/:id", (0, auth_1.default)("user", "admin", "dealer"), auth_controller_1.userController.getDealerProfile);
 exports.authRouter = route;

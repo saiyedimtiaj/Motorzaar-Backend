@@ -9,6 +9,10 @@ const dealerRequestSchema = new mongoose_1.Schema({
         required: true,
         ref: "Users",
     },
+    offerId: {
+        type: String,
+        required: true,
+    },
     dealerId: {
         type: mongoose_1.Schema.Types.ObjectId,
         required: true,
@@ -32,6 +36,9 @@ const dealerRequestSchema = new mongoose_1.Schema({
     allInPrice: {
         type: Number,
         required: true,
+    },
+    depositDate: {
+        type: Date,
     },
 }, {
     timestamps: true,

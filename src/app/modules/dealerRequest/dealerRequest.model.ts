@@ -9,6 +9,10 @@ const dealerRequestSchema = new Schema<TDealerRequest>(
       required: true,
       ref: "Users",
     },
+    offerId: {
+      type: String,
+      required: true,
+    },
     dealerId: {
       type: Schema.Types.ObjectId,
       required: true,
@@ -32,6 +36,9 @@ const dealerRequestSchema = new Schema<TDealerRequest>(
     allInPrice: {
       type: Number,
       required: true,
+    },
+    depositDate: {
+      type: Date,
     },
   },
   {

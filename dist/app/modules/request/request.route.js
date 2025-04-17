@@ -10,4 +10,5 @@ const auth_1 = __importDefault(require("../../middlewares/auth"));
 const route = (0, express_1.Router)();
 route.post("/create", (0, auth_1.default)("user"), request_controller_1.requestController.createRequest);
 route.get("/", request_controller_1.requestController.getAllRequest);
+route.get("/user-requests", (0, auth_1.default)("user"), request_controller_1.requestController.getAllCustomerRequest);
 exports.requestRoute = route;

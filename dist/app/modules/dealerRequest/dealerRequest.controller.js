@@ -44,6 +44,7 @@ const AppError_1 = require("../../errors/AppError");
 const dealerRequest_model_1 = require("./dealerRequest.model");
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const listing_model_1 = __importDefault(require("../listing/listing.model"));
+const nanoid_1 = require("nanoid");
 const addDepositPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     const session = yield mongoose_1.default.startSession();
@@ -76,12 +77,16 @@ const addDepositPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
             date: new Date(),
         });
         yield request.save({ session });
+        // Generate a 6-character unique offerId
+        const offerId = (0, nanoid_1.nanoid)(6);
         // Create DealerRequest with the same session
-        const result = yield dealerRequest_model_1.DealerRequest.create([req.body], { session });
+        const result = yield dealerRequest_model_1.DealerRequest.create([
+            Object.assign(Object.assign({}, req.body), { offerId }),
+        ], { session });
         yield session.commitTransaction();
         session.endSession();
         (0, sendResponse_1.default)(res, {
-            data: result[0], // Because create returns an array when used with session
+            data: result[0],
             success: true,
             statusCode: http_status_1.default.OK,
             message: "Deposit price added successfully!",
@@ -90,7 +95,7 @@ const addDepositPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     catch (error) {
         yield session.abortTransaction();
         session.endSession();
-        throw error; // Will be caught by catchAsync
+        throw error;
     }
 }));
 const viewDepositDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -124,7 +129,7 @@ const customerOffers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         userId: new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id),
         status: {
             $in: [
-                "Offer Accepted",
+                "Deposit Paid",
                 "Auction Won",
                 "Test Drive & Collection Ready",
                 "Auction Lost",
@@ -140,9 +145,53 @@ const customerOffers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         message: "Successfully fetched customer offers!",
     });
 }));
+const getDealeSubmitedOffersListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const result = yield dealerRequest_model_1.DealerRequest.find({
+        dealerId: new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id),
+        status: { $in: req.query.status },
+    })
+        .sort({ createdAt: "desc" })
+        .populate("listingId");
+    (0, sendResponse_1.default)(res, {
+        data: result,
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Listings retrieved successfully!",
+    });
+}));
+const updateAuctionStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const result = yield dealerRequest_model_1.DealerRequest.findByIdAndUpdate(req.params.id, {
+        status: (_a = req.body) === null || _a === void 0 ? void 0 : _a.status,
+    }, {
+        new: true,
+    });
+    (0, sendResponse_1.default)(res, {
+        data: result,
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Update auction status sucessfully!",
+    });
+}));
+const getSubmitedPrices = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield dealerRequest_model_1.DealerRequest.find()
+        .populate("listingId")
+        .populate("userId")
+        .sort({ createdAt: "desc" });
+    (0, sendResponse_1.default)(res, {
+        data: result,
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Update auction status sucessfully!",
+    });
+}));
 exports.dealerRequestController = {
     addDepositPaid,
     viewDepositDetails,
     dealerRequestDetails,
     customerOffers,
+    getDealeSubmitedOffersListing,
+    updateAuctionStatus,
+    getSubmitedPrices,
 };

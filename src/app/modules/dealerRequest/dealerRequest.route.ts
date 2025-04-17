@@ -28,4 +28,22 @@ route.get(
   dealerRequestController.customerOffers
 );
 
+route.get(
+  "/submited-offer",
+  auth("dealer"),
+  dealerRequestController.getDealeSubmitedOffersListing
+);
+
+route.post(
+  "/auction-status/:id",
+  auth("dealer"),
+  dealerRequestController.updateAuctionStatus
+);
+
+route.get(
+  "/submited-price",
+  auth("admin"),
+  dealerRequestController.getSubmitedPrices
+);
+
 export const dealerRequestRoute = route;

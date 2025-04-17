@@ -12,12 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requestController = exports.getAllRequest = void 0;
-/* eslint-disable @typescript-eslint/no-explicit-any */
+exports.requestController = exports.getAllCustomerRequest = exports.getAllRequest = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const request_model_1 = __importDefault(require("./request.model"));
+const mongoose_1 = require("mongoose");
+const dealerRequest_model_1 = require("../dealerRequest/dealerRequest.model");
 const createRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const result = yield request_model_1.default.create(Object.assign(Object.assign({}, req.body), { userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id, timeline: [
@@ -35,33 +36,29 @@ const createRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     });
 }));
 exports.getAllRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const query = {};
-    const { searchQuery, page = "1", limit = "10" } = req.query;
-    // If there's a search query, search across multiple fields
-    if (searchQuery) {
-        const searchRegex = { $regex: searchQuery, $options: "i" };
-        query.$or = [{ model: searchRegex }];
-    }
-    // Pagination
-    const currentPage = parseInt(page, 10);
-    const pageSize = parseInt(limit, 10);
-    const skip = (currentPage - 1) * pageSize;
-    // Count total documents
-    const totalRequests = yield request_model_1.default.countDocuments(query);
-    // Get paginated + populated results
-    const requests = yield request_model_1.default.find(query)
-        .populate("userId") // assuming RequestModel.user is a ref to User
-        .skip(skip)
-        .limit(pageSize)
-        .exec();
+    const requests = yield request_model_1.default.find()
+        .populate("userId")
+        .sort({ createdAt: "desc" });
     (0, sendResponse_1.default)(res, {
         data: requests,
-        meta: {
-            total: totalRequests,
-            page: currentPage,
-            limit: pageSize,
-            totalPage: Math.ceil(totalRequests / pageSize),
-        },
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Requests retrieved successfully!",
+    });
+}));
+exports.getAllCustomerRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const requests = yield request_model_1.default.find({
+        userId: new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id),
+    }).sort({ createdAt: "desc" });
+    const result = yield Promise.all(requests.map((request) => __awaiter(void 0, void 0, void 0, function* () {
+        const offerCount = yield dealerRequest_model_1.DealerRequest.find({
+            requestId: new mongoose_1.Types.ObjectId(request === null || request === void 0 ? void 0 : request._id),
+        }).select("_id");
+        return Object.assign(Object.assign({}, request.toObject()), { count: (offerCount === null || offerCount === void 0 ? void 0 : offerCount.length) || 0 });
+    })));
+    (0, sendResponse_1.default)(res, {
+        data: result,
         success: true,
         statusCode: http_status_1.default.OK,
         message: "Requests retrieved successfully!",
@@ -70,4 +67,5 @@ exports.getAllRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
 exports.requestController = {
     createRequest,
     getAllRequest: exports.getAllRequest,
+    getAllCustomerRequest: exports.getAllCustomerRequest,
 };

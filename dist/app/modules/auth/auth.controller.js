@@ -89,13 +89,9 @@ const getCurrentUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    let payload = {};
+    const payload = JSON.parse(req.body.data);
     if (req.file) {
         payload.avater = `${config_1.default.server_url}/${req.file.path}`;
-    }
-    if (req.body) {
-        const parseData = JSON.parse(req.body.data);
-        payload = Object.assign(Object.assign({}, payload), parseData);
     }
     const result = yield auth_modal_1.Users.findByIdAndUpdate((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, Object.assign({}, payload), {
         new: true,
@@ -107,6 +103,16 @@ const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         message: "update your information sucessfully!",
     });
 }));
+const getDealerProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const result = yield auth_modal_1.Users.findById((_a = req.params) === null || _a === void 0 ? void 0 : _a.id);
+    (0, sendResponse_1.default)(res, {
+        data: result,
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "get user sucessfully!",
+    });
+}));
 exports.userController = {
     createUser,
     loginUser,
@@ -116,4 +122,5 @@ exports.userController = {
     resetPassword,
     getCurrentUser,
     updateUser,
+    getDealerProfile,
 };

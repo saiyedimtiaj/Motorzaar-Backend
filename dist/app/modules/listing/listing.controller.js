@@ -46,7 +46,6 @@ const listing_model_1 = __importDefault(require("./listing.model")); // Assuming
 const mongoose_1 = __importStar(require("mongoose"));
 const AppError_1 = require("../../errors/AppError");
 const dealerRequest_model_1 = require("../dealerRequest/dealerRequest.model");
-const auth_modal_1 = require("../auth/auth.modal");
 const createNewListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const session = yield mongoose_1.default.startSession();
@@ -105,9 +104,10 @@ const getListingByRequestId = (0, catchAsync_1.default)((req, res) => __awaiter(
         message: " successfully",
     });
 }));
-const approveListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const preApproveListingStatusUpdate = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield listing_model_1.default.findByIdAndUpdate(req.params.id, {
         status: "Pre-Approval",
+        sentToDealerDate: new Date(),
     }, {
         new: true,
     });
@@ -119,59 +119,24 @@ const approveListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     });
 }));
 const dealerOfferRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
-    const dealer = yield auth_modal_1.Users.findById((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
-    if (!dealer) {
-        throw new Error("Dealer not found!");
-    }
-    const { searchQuery, page = "1", limit = "10" } = req.query;
-    const query = {
-        createdAt: { $gte: dealer === null || dealer === void 0 ? void 0 : dealer.createdAt },
-        status: { $ne: "Pending" },
-    };
-    // Search logic
-    if (searchQuery) {
-        const searchRegex = { $regex: searchQuery, $options: "i" };
-        query.$or = [{ model: searchRegex }];
-    }
-    // Pagination
-    const currentPage = parseInt(page, 10);
-    const pageSize = parseInt(limit, 10);
-    const skip = (currentPage - 1) * pageSize;
-    // Total count
-    const totalListing = yield listing_model_1.default.countDocuments(query);
-    // Fetch listings
-    const listings = yield listing_model_1.default.find(query)
-        .populate("requestId")
-        .skip(skip)
-        .limit(pageSize)
-        .lean();
-    // Fetch all dealer requests for this dealer in one query
+    // Get all DealerRequests for this dealer
     const dealerRequests = yield dealerRequest_model_1.DealerRequest.find({
-        dealerId: new mongoose_1.Types.ObjectId((_b = req.user) === null || _b === void 0 ? void 0 : _b._id),
-    }).lean();
-    // Map of listingId -> status
-    const requestStatusMap = {};
-    dealerRequests.forEach((req) => {
-        requestStatusMap[req.listingId.toString()] = req.status;
-    });
-    // Attach dealerRequest status to each listing
-    const enrichedListings = listings.map((listing) => {
-        const dealerStatus = requestStatusMap[listing._id.toString()];
-        return Object.assign(Object.assign({}, listing), { status: dealerStatus || listing.status });
-    });
-    // Final response
+        dealerId: new mongoose_1.Types.ObjectId(req.user._id),
+    }).select("_id");
+    // Extract all listingIds that the dealer has already requested
+    const requestedListingIds = dealerRequests.map((req) => req.listingId.toString());
+    // Find listings with "Pre-Approval" status AND not already requested by this dealer
+    const listings = yield listing_model_1.default.find({
+        status: "Pre-Approval",
+        _id: { $nin: requestedListingIds },
+    })
+        .sort({ createdAt: "desc" })
+        .populate("requestId", "budget");
     (0, sendResponse_1.default)(res, {
-        data: enrichedListings,
-        meta: {
-            total: totalListing,
-            page: currentPage,
-            limit: pageSize,
-            totalPage: Math.ceil(totalListing / pageSize),
-        },
+        data: listings,
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Listings retrieved successfully!",
+        message: "Filtered listings retrieved successfully!",
     });
 }));
 const getUserListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -184,10 +149,14 @@ const getUserListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     const listingIds = listing.map((item) => item._id);
     const listingRequest = yield dealerRequest_model_1.DealerRequest.find({
         listingId: { $in: listingIds },
-    }).select("_id listingId");
+    }).select("_id listingId allInPrice");
+    const allInPrice = listingRequest === null || listingRequest === void 0 ? void 0 : listingRequest.map((list) => list.allInPrice);
+    const min = Math.min(...allInPrice);
+    const max = Math.min(...allInPrice);
     const result = listing.map((list) => {
         const matchCount = listingRequest.filter((req) => req.listingId.toString() === list._id.toString()).length;
-        return Object.assign(Object.assign({}, list.toObject()), { count: matchCount });
+        return Object.assign(Object.assign({}, list.toObject()), { count: matchCount, min,
+            max });
     });
     (0, sendResponse_1.default)(res, {
         data: result,
@@ -211,11 +180,48 @@ const getListingOffers = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         message: "Listings offeres retrieved successfully!",
     });
 }));
+const updateListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { data } = req.body;
+    const parseData = JSON.parse(data);
+    const payload = Object.assign({}, parseData);
+    let newImages = [];
+    if (req.files) {
+        newImages = req.files.map((file) => `${config_1.default.server_url}/${file.path}`);
+    }
+    payload.images = [...parseData.existingImages, ...newImages];
+    const result = yield listing_model_1.default.findByIdAndUpdate(req.params.id, {
+        $set: Object.assign({}, payload),
+    }, {
+        new: true,
+    });
+    (0, sendResponse_1.default)(res, {
+        data: result,
+        success: true,
+        statusCode: http_status_1.default.CREATED,
+        message: "Car updated successfully!",
+    });
+}));
+const getPreApprovalListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const listing = yield listing_model_1.default.find({
+        status: "Pre-Approval",
+    })
+        .populate("requestId", "_id budget")
+        .populate("userId")
+        .sort({ createdAt: "desc" });
+    (0, sendResponse_1.default)(res, {
+        data: listing,
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Listings offeres retrieved successfully!",
+    });
+}));
 exports.listingController = {
     createNewListing,
     getListingByRequestId,
-    approveListing,
+    preApproveListingStatusUpdate,
     dealerOfferRequest,
     getUserListing,
     getListingOffers,
+    updateListing,
+    getPreApprovalListing,
 };

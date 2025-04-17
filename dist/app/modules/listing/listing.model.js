@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const ListingSchema = new mongoose_1.Schema({
-    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Users", required: true },
     requestId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Request", required: true },
     make: { type: String, required: true },
     model: { type: String, required: true },
@@ -26,6 +26,7 @@ const ListingSchema = new mongoose_1.Schema({
     carCondition: { type: String, required: true },
     dealerUrl: { type: String, required: true },
     status: { type: String, required: true, default: "Pending" },
+    sentToDealerDate: { type: Date },
 }, { timestamps: true });
 const Listing = (0, mongoose_1.model)("Listing", ListingSchema);
 exports.default = Listing;

@@ -7,4 +7,6 @@ export type TDealerRequest = {
   requestId: Types.ObjectId;
   status: string;
   allInPrice: number;
+  depositDate?: Date;
+  offerId: string;
 };
