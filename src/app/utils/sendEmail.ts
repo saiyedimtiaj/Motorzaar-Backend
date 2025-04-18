@@ -9,6 +9,7 @@ interface EmailOption {
   template: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: { [key: string]: any };
+  fromEmail?: string;
 }
 
 const transporter = nodemailer.createTransport({
@@ -22,13 +23,13 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async (options: EmailOption): Promise<void> => {
-  const { email, subject, template, data } = options;
+  const { email, subject, template, data, fromEmail } = options;
   const templatePath = path.join(__dirname, "../mails", template);
   try {
     const html: string = await ejs.renderFile(templatePath, data);
 
     const mailOption = {
-      from: process.env.SMTP_MAIL,
+      from: fromEmail ? fromEmail : process.env.SMTP_MAIL,
       to: email,
       subject,
       html,

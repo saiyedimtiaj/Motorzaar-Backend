@@ -46,34 +46,36 @@ const listing_model_1 = __importDefault(require("./listing.model")); // Assuming
 const mongoose_1 = __importStar(require("mongoose"));
 const AppError_1 = require("../../errors/AppError");
 const dealerRequest_model_1 = require("../dealerRequest/dealerRequest.model");
+const timeline_modal_1 = __importDefault(require("../timeline/timeline.modal"));
 const createNewListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     const session = yield mongoose_1.default.startSession();
     session.startTransaction();
     try {
         const { data } = req.body;
         const imageFiles = req.files;
-        // Ensure data and files exist
         if (!data) {
             throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Missing data in request body");
         }
-        const parsedData = JSON.parse(data);
-        const images = (imageFiles === null || imageFiles === void 0 ? void 0 : imageFiles.map((file) => `${config_1.default.server_url}/${file.path}`)) || [];
+        let parsedData;
+        try {
+            parsedData = JSON.parse(data);
+        }
+        catch (_a) {
+            throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "Invalid JSON in data field");
+        }
+        const images = (imageFiles === null || imageFiles === void 0 ? void 0 : imageFiles.map((file) => (file === null || file === void 0 ? void 0 : file.path) ? `${config_1.default.server_url}/${file.path}` : null).filter(Boolean)) || [];
         const request = yield request_model_1.default.findById(parsedData === null || parsedData === void 0 ? void 0 : parsedData.requestId).session(session);
         if (!request) {
             throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Request not found");
         }
-        const alreadySent = (_a = request.timeline) === null || _a === void 0 ? void 0 : _a.some((item) => item.status === "sent");
-        // Add timeline entry if not already "sent"
-        if (!alreadySent) {
-            request.timeline.push({
+        yield timeline_modal_1.default.create([
+            {
                 status: "sent",
                 note: `Listing sent to dealer: ${parsedData.make} ${parsedData.model}`,
                 date: new Date(),
-            });
-            yield request.save({ session });
-        }
-        // Create new listing
+                requestId: request === null || request === void 0 ? void 0 : request._id,
+            },
+        ], { session });
         const result = yield listing_model_1.default.create([Object.assign(Object.assign({}, parsedData), { images })], {
             session,
         });
@@ -85,11 +87,11 @@ const createNewListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 
             statusCode: http_status_1.default.OK,
             message: "Listing added successfully",
         });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     }
     catch (error) {
         yield session.abortTransaction();
         session.endSession();
-        console.error("Transaction error:", error);
         throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, "Failed to create listing , try again .");
     }
 }));

@@ -46,4 +46,10 @@ route.get(
   dealerRequestController.getSubmitedPrices
 );
 
+route.get(
+  "/submited-price/:id",
+  auth("admin"),
+  dealerRequestController.getSubmitedPricesByRequestId
+);
+
 export const dealerRequestRoute = route;

@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Customer Inquiry</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        max-width: 600px;
+        margin: auto;
+        border: 1px solid #ddd;
+      }
+      h2 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+      }
+      p {
+        margin: 8px 0;
+      }
+      .label {
+        font-weight: bold;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>New Customer Inquiry</h2>
+      <p><span class="label">Full Name:</span> <%= fullName %></p>
+      <p><span class="label">Email:</span> <%= email %></p>
+      <p><span class="label">Phone Number:</span> <%= phoneNumber %></p>
+      <p><span class="label">Message:</span></p>
+      <p><%= message %></p>
+    </div>
+  </body>
+</html>

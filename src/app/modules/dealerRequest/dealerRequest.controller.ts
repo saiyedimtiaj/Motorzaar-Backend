@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import mongoose, { Types } from "mongoose";
 import httpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
@@ -7,6 +9,7 @@ import { DealerRequest } from "./dealerRequest.model";
 import sendResponse from "../../utils/sendResponse";
 import Listing from "../listing/listing.model";
 import { nanoid } from "nanoid";
+import Timeline from "../timeline/timeline.modal";
 
 const addDepositPaid = catchAsync(async (req, res) => {
   const session = await mongoose.startSession();
@@ -43,15 +46,17 @@ const addDepositPaid = catchAsync(async (req, res) => {
       );
     }
 
-    // Push new timeline update
-    request.timeline.push({
-      status: "price-submitted",
-      note: `price-submitted ${req.body?.allInPrice}`,
-      date: new Date(),
-    });
-
-    await request.save({ session });
-
+    await Timeline.create(
+      [
+        {
+          status: "price-submitted",
+          note: `price-submitted ${req.body?.allInPrice}`,
+          date: new Date(),
+          requestId: request?._id,
+        },
+      ],
+      { session }
+    );
     // Generate a 6-character unique offerId
     const offerId = nanoid(6);
 
@@ -112,12 +117,7 @@ const customerOffers = catchAsync(async (req, res) => {
   const result = await DealerRequest.find({
     userId: new Types.ObjectId(req.user?._id),
     status: {
-      $in: [
-        "Deposit Paid",
-        "Auction Won",
-        "Test Drive & Collection Ready",
-        "Auction Lost",
-      ],
+      $in: ["Deposit Paid", "auction-won", "ready", "Auction Lost"],
     },
   })
     .populate("listingId")
@@ -148,15 +148,77 @@ const getDealeSubmitedOffersListing = catchAsync(async (req, res) => {
 });
 
 const updateAuctionStatus = catchAsync(async (req, res) => {
-  const result = await DealerRequest.findByIdAndUpdate(
-    req.params.id,
-    {
-      status: req.body?.status,
-    },
-    {
-      new: true,
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Status is required");
     }
-  );
+
+    const result = await DealerRequest.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, session }
+    );
+
+    if (!result) {
+      throw new AppError(httpStatus.NOT_FOUND, "DealerRequest not found");
+    }
+
+    if (status === "auction-lost") {
+      await Timeline.create(
+        [
+          {
+            status: "auction-lost",
+            note: "Dealer lost auction: Vehicle sold above maximum price",
+            date: new Date(),
+            requestId: result.requestId,
+          },
+        ],
+        { session }
+      );
+    } else if (status === "auction-won") {
+      await Timeline.create(
+        [
+          {
+            status: "auction-won",
+            note: `Dealer won auction: £${result.allInPrice}`,
+            date: new Date(),
+            requestId: result.requestId,
+          },
+        ],
+        { session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    sendResponse(res, {
+      data: result,
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Updated auction status successfully!",
+    });
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Auction status update failed, please try again"
+    );
+  }
+});
+
+const getSubmitedPrices = catchAsync(async (req, res) => {
+  const result = await DealerRequest.find()
+    .populate("listingId")
+    .populate("userId")
+    .sort({ createdAt: "desc" });
   sendResponse(res, {
     data: result,
     success: true,
@@ -165,10 +227,11 @@ const updateAuctionStatus = catchAsync(async (req, res) => {
   });
 });
 
-const getSubmitedPrices = catchAsync(async (req, res) => {
-  const result = await DealerRequest.find()
-    .populate("listingId")
-    .populate("userId")
+const getSubmitedPricesByRequestId = catchAsync(async (req, res) => {
+  const result = await DealerRequest.find({
+    requestId: new Types.ObjectId(req.params.id),
+  })
+    .populate("dealerId")
     .sort({ createdAt: "desc" });
   sendResponse(res, {
     data: result,
@@ -186,4 +249,5 @@ export const dealerRequestController = {
   getDealeSubmitedOffersListing,
   updateAuctionStatus,
   getSubmitedPrices,
+  getSubmitedPricesByRequestId,
 };

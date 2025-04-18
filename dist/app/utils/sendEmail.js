@@ -27,12 +27,12 @@ const transporter = nodemailer_1.default.createTransport({
     },
 });
 const sendEmail = (options) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, subject, template, data } = options;
+    const { email, subject, template, data, fromEmail } = options;
     const templatePath = path_1.default.join(__dirname, "../mails", template);
     try {
         const html = yield ejs_1.default.renderFile(templatePath, data);
         const mailOption = {
-            from: process.env.SMTP_MAIL,
+            from: fromEmail ? fromEmail : process.env.SMTP_MAIL,
             to: email,
             subject,
             html,

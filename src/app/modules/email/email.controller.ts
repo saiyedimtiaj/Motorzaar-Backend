@@ -2,7 +2,7 @@ import httpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import Email from "./email.model";
-import { sendEmailFromDealer } from "../../utils/sendEmail";
+import sendEmail, { sendEmailFromDealer } from "../../utils/sendEmail";
 
 export const contactSendEmail = catchAsync(async (req, res) => {
   const { dealershipName, contactName, email, phone, message } = req.body;
@@ -38,5 +38,27 @@ export const contactSendEmail = catchAsync(async (req, res) => {
     data: savedEmail,
     message:
       "Thank you for reaching out! Your message has been received. We'll get back to you within 24 hours.",
+  });
+});
+
+export const sendEmailTodealer = catchAsync(async (req, res) => {
+  await sendEmail({
+    fromEmail: req.body?.email,
+    email: req.body?.dealerEmail,
+    subject: "Customer Inquiry from Motorzaar",
+    template: "dealer-email.ejs",
+    data: {
+      fullName: req.body?.firstName,
+      phoneNumber: req.body?.phone,
+      message: req.body?.message,
+      email: req.body?.email,
+    },
+  });
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: [],
+    message:
+      "Your message has been successfully sent to the dealer. They will contact you shortly regarding your inquiry. Thank you for choosing Motorzaar!",
   });
 });

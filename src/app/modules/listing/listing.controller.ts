@@ -9,6 +9,7 @@ import mongoose, { Types } from "mongoose";
 import { AppError } from "../../errors/AppError";
 import { DealerRequest } from "../dealerRequest/dealerRequest.model";
 import { TListing } from "./listing.interface";
+import Timeline from "../timeline/timeline.modal";
 
 const createNewListing = catchAsync(async (req, res) => {
   const session = await mongoose.startSession();
@@ -18,14 +19,23 @@ const createNewListing = catchAsync(async (req, res) => {
     const { data } = req.body;
     const imageFiles = req.files as Express.Multer.File[];
 
-    // Ensure data and files exist
     if (!data) {
       throw new AppError(httpStatus.NOT_FOUND, "Missing data in request body");
     }
 
-    const parsedData = JSON.parse(data);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(data);
+    } catch {
+      throw new AppError(httpStatus.BAD_REQUEST, "Invalid JSON in data field");
+    }
+
     const images =
-      imageFiles?.map((file) => `${config.server_url}/${file.path}`) || [];
+      imageFiles
+        ?.map((file) =>
+          file?.path ? `${config.server_url}/${file.path}` : null
+        )
+        .filter(Boolean) || [];
 
     const request = await Request.findById(parsedData?.requestId).session(
       session
@@ -35,21 +45,18 @@ const createNewListing = catchAsync(async (req, res) => {
       throw new AppError(httpStatus.NOT_FOUND, "Request not found");
     }
 
-    const alreadySent = request.timeline?.some(
-      (item: any) => item.status === "sent"
+    await Timeline.create(
+      [
+        {
+          status: "sent",
+          note: `Listing sent to dealer: ${parsedData.make} ${parsedData.model}`,
+          date: new Date(),
+          requestId: request?._id,
+        },
+      ],
+      { session }
     );
 
-    // Add timeline entry if not already "sent"
-    if (!alreadySent) {
-      request.timeline.push({
-        status: "sent",
-        note: `Listing sent to dealer: ${parsedData.make} ${parsedData.model}`,
-        date: new Date(),
-      });
-      await request.save({ session });
-    }
-
-    // Create new listing
     const result = await Listing.create([{ ...parsedData, images }], {
       session,
     });
@@ -63,11 +70,10 @@ const createNewListing = catchAsync(async (req, res) => {
       statusCode: httpStatus.OK,
       message: "Listing added successfully",
     });
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
-
-    console.error("Transaction error:", error);
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       "Failed to create listing , try again ."

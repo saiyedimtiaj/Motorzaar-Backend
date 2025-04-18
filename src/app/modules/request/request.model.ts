@@ -39,13 +39,6 @@ const requestSchema = new Schema<TRequest>(
     hasPartExchange: { type: Boolean, required: true },
     partExchangeReg: { type: String, default: "" },
     status: { type: String, default: "new", required: true },
-    timeline: [
-      {
-        status: { type: String, required: true },
-        date: { type: Date, required: true },
-        note: { type: String, required: true },
-      },
-    ],
   },
   {
     timestamps: true,

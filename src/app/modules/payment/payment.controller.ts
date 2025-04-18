@@ -8,6 +8,7 @@ import Stripe from "stripe";
 import Payment from "./payment.model";
 import mongoose from "mongoose";
 import { AppError } from "../../errors/AppError";
+import Timeline from "../timeline/timeline.modal";
 
 const stripe = new Stripe(config.stripe_secret!);
 
@@ -46,11 +47,24 @@ const confirmPayment = catchAsync(async (req, res) => {
       req.body?.listingId,
       {
         status: "Deposit Paid",
+        depositDate: new Date(),
       },
       {
         new: true,
         session,
       }
+    );
+
+    await Timeline.create(
+      [
+        {
+          status: "deposit-paid",
+          note: "Customer paid deposit: £199",
+          date: new Date(),
+          requestId: listing?.requestId,
+        },
+      ],
+      { session }
     );
 
     if (!listing) {

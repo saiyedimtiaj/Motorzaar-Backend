@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { contactSendEmail } from "./email.controller";
+import { contactSendEmail, sendEmailTodealer } from "./email.controller";
 
 const router = Router();
 router.post("/send", contactSendEmail);
+router.post("/send-dealer", sendEmailTodealer);
 
 export const emailRoute = router;

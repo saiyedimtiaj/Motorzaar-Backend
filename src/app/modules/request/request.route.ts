@@ -12,4 +12,6 @@ route.get(
   requestController.getAllCustomerRequest
 );
 
+route.get("/timeline/:id", auth("admin"), requestController.getAllTimeLine);
+
 export const requestRoute = route;

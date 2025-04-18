@@ -23,6 +23,7 @@ const stripe_1 = __importDefault(require("stripe"));
 const payment_model_1 = __importDefault(require("./payment.model"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const AppError_1 = require("../../errors/AppError");
+const timeline_modal_1 = __importDefault(require("../timeline/timeline.modal"));
 const stripe = new stripe_1.default(config_1.default.stripe_secret);
 const initialPaymentDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -56,10 +57,19 @@ const confirmPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     try {
         const listing = yield dealerRequest_model_1.DealerRequest.findByIdAndUpdate((_a = req.body) === null || _a === void 0 ? void 0 : _a.listingId, {
             status: "Deposit Paid",
+            depositDate: new Date(),
         }, {
             new: true,
             session,
         });
+        yield timeline_modal_1.default.create([
+            {
+                status: "deposit-paid",
+                note: "Customer paid deposit: £199",
+                date: new Date(),
+                requestId: listing === null || listing === void 0 ? void 0 : listing.requestId,
+            },
+        ], { session });
         if (!listing) {
             throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Dealer request not found");
         }
