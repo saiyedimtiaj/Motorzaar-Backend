@@ -40,7 +40,6 @@ exports.listingController = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
-const config_1 = __importDefault(require("../../config"));
 const request_model_1 = __importDefault(require("../request/request.model"));
 const listing_model_1 = __importDefault(require("./listing.model")); // Assuming your Listing model is here
 const mongoose_1 = __importStar(require("mongoose"));
@@ -63,7 +62,7 @@ const createNewListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 
         catch (_a) {
             throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "Invalid JSON in data field");
         }
-        const images = (imageFiles === null || imageFiles === void 0 ? void 0 : imageFiles.map((file) => (file === null || file === void 0 ? void 0 : file.path) ? `${config_1.default.server_url}/${file.path}` : null).filter(Boolean)) || [];
+        const images = (imageFiles === null || imageFiles === void 0 ? void 0 : imageFiles.map((file) => ((file === null || file === void 0 ? void 0 : file.path) ? file.path : null)).filter(Boolean)) || [];
         const request = yield request_model_1.default.findById(parsedData === null || parsedData === void 0 ? void 0 : parsedData.requestId).session(session);
         if (!request) {
             throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Request not found");
@@ -188,7 +187,7 @@ const updateListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     const payload = Object.assign({}, parseData);
     let newImages = [];
     if (req.files) {
-        newImages = req.files.map((file) => `${config_1.default.server_url}/${file.path}`);
+        newImages = req.files.map((file) => file.path);
     }
     payload.images = [...parseData.existingImages, ...newImages];
     const result = yield listing_model_1.default.findByIdAndUpdate(req.params.id, {

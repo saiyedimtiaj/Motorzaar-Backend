@@ -16,4 +16,7 @@ export default {
   client_live_link: process.env.CLIENT_LIVE_LINK,
   server_url: process.env.SERVER_URL,
   stripe_secret: process.env.STRIPE_SECRET_KEY,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  cloud_api_key: process.env.CLOUDINARY_API_KEY,
+  cloud_api_secret: process.env.CLOUDINARY_API_SECRET,
 };

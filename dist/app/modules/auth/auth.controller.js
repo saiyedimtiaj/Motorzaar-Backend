@@ -19,7 +19,6 @@ const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const auth_service_1 = require("./auth.service");
 const auth_modal_1 = require("./auth.modal");
-const config_1 = __importDefault(require("../../config"));
 const createUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield auth_service_1.userServices.createUserIntoDb(req.body);
     (0, sendResponse_1.default)(res, {
@@ -91,7 +90,7 @@ const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
     var _a;
     const payload = JSON.parse(req.body.data);
     if (req.file) {
-        payload.avater = `${config_1.default.server_url}/${req.file.path}`;
+        payload.avater = req.file.path;
     }
     const result = yield auth_modal_1.Users.findByIdAndUpdate((_a = req.user) === null || _a === void 0 ? void 0 : _a._id, Object.assign({}, payload), {
         new: true,

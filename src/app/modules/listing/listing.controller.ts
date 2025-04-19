@@ -2,7 +2,6 @@
 import httpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
-import config from "../../config";
 import Request from "../request/request.model";
 import Listing from "./listing.model"; // Assuming your Listing model is here
 import mongoose, { Types } from "mongoose";
@@ -32,9 +31,7 @@ const createNewListing = catchAsync(async (req, res) => {
 
     const images =
       imageFiles
-        ?.map((file) =>
-          file?.path ? `${config.server_url}/${file.path}` : null
-        )
+        ?.map((file) => (file?.path ? file.path : null))
         .filter(Boolean) || [];
 
     const request = await Request.findById(parsedData?.requestId).session(
@@ -199,9 +196,7 @@ const updateListing = catchAsync(async (req, res) => {
 
   let newImages: string[] = [];
   if (req.files) {
-    newImages = (req.files as Express.Multer.File[]).map(
-      (file) => `${config.server_url}/${file.path}`
-    );
+    newImages = (req.files as Express.Multer.File[]).map((file) => file.path);
   }
 
   payload.images = [...parseData.existingImages, ...newImages];

@@ -4,7 +4,6 @@ import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { userServices } from "./auth.service";
 import { Users } from "./auth.modal";
-import config from "../../config";
 
 const createUser = catchAsync(async (req, res) => {
   const result = await userServices.createUserIntoDb(req.body);
@@ -83,7 +82,7 @@ const getCurrentUser = catchAsync(async (req, res) => {
 const updateUser = catchAsync(async (req, res) => {
   const payload: Record<string, any> = JSON.parse(req.body.data);
   if (req.file) {
-    payload.avater = `${config.server_url}/${req.file.path}`;
+    payload.avater = req.file.path;
   }
   const result = await Users.findByIdAndUpdate(
     req.user?._id,

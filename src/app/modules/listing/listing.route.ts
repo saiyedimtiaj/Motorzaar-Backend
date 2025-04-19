@@ -1,20 +1,20 @@
 import { Router } from "express";
 import auth from "../../middlewares/auth";
-import { multerUpload } from "../../config/multer.config";
 import { listingController } from "./listing.controller";
+import { cloudUpload } from "../../config/cloudinary.config";
 
 const route = Router();
 
 route.post(
   "/create",
   auth("admin"),
-  multerUpload.array("images"),
+  cloudUpload.array("images"),
   listingController.createNewListing
 );
 route.patch(
   "/edit/:id",
   auth("admin"),
-  multerUpload.array("images"),
+  cloudUpload.array("images"),
   listingController.updateListing
 );
 

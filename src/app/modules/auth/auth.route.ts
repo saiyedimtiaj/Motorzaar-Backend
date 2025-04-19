@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { userController } from "./auth.controller";
 import auth from "../../middlewares/auth";
-import { multerUpload } from "../../config/multer.config";
+import { cloudUpload } from "../../config/cloudinary.config";
 const route = Router();
 
 route.post("/signup", userController.createUser);
@@ -22,7 +22,7 @@ route.get(
 route.put(
   "/update-profile",
   auth("user", "admin", "dealer"),
-  multerUpload.single("image"),
+  cloudUpload.single("image"),
   userController.updateUser
 );
 
