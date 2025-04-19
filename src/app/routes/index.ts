@@ -5,6 +5,7 @@ import { listingRoute } from "../modules/listing/listing.route";
 import { emailRoute } from "../modules/email/email.route";
 import { dealerRequestRoute } from "../modules/dealerRequest/dealerRequest.route";
 import { paymentRoute } from "../modules/payment/payment.route";
+import { dashboardRoute } from "../modules/dashboard/dashboard.route";
 
 const router = Router();
 
@@ -32,6 +33,10 @@ const moduleRoutes = [
   {
     path: "/payment",
     route: paymentRoute,
+  },
+  {
+    path: "/dashboard",
+    route: dashboardRoute,
   },
 ];
 
