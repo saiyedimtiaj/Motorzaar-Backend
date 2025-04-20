@@ -51,5 +51,10 @@ route.get(
   auth("admin"),
   dealerRequestController.getSubmitedPricesByRequestId
 );
+route.post(
+  "/offer-reject",
+  auth("dealer"),
+  dealerRequestController.rejectOffer
+);
 
 export const dealerRequestRoute = route;

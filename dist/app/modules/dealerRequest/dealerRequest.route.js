@@ -16,4 +16,5 @@ route.get("/submited-offer", (0, auth_1.default)("dealer"), dealerRequest_contro
 route.post("/auction-status/:id", (0, auth_1.default)("dealer"), dealerRequest_controller_1.dealerRequestController.updateAuctionStatus);
 route.get("/submited-price", (0, auth_1.default)("admin"), dealerRequest_controller_1.dealerRequestController.getSubmitedPrices);
 route.get("/submited-price/:id", (0, auth_1.default)("admin"), dealerRequest_controller_1.dealerRequestController.getSubmitedPricesByRequestId);
+route.post("/offer-reject", (0, auth_1.default)("dealer"), dealerRequest_controller_1.dealerRequestController.rejectOffer);
 exports.dealerRequestRoute = route;

@@ -110,14 +110,14 @@ const preApproveListingStatusUpdate = catchAsync(async (req, res) => {
 });
 
 const dealerOfferRequest = catchAsync(async (req, res) => {
-  // Get all DealerRequests for this dealer
+  // Get all DealerRequests for this dealer, include listingId field
   const dealerRequests = await DealerRequest.find({
     dealerId: new Types.ObjectId(req.user._id),
-  }).select("_id");
+  }).select("listingId");
 
   // Extract all listingIds that the dealer has already requested
   const requestedListingIds = dealerRequests.map((req) =>
-    req.listingId.toString()
+    req.listingId?.toString()
   );
 
   // Find listings with "Pre-Approval" status AND not already requested by this dealer
@@ -225,8 +225,8 @@ const getPreApprovalListing = catchAsync(async (req, res) => {
   const listing = await Listing.find({
     status: "Pre-Approval",
   })
-    .populate("requestId", "_id budget")
-    .populate("userId")
+    .populate("requestId")
+    .populate("userId", "_id fullName email")
     .sort({ createdAt: "desc" });
   sendResponse(res, {
     data: listing,

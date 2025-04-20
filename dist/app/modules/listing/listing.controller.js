@@ -120,12 +120,12 @@ const preApproveListingStatusUpdate = (0, catchAsync_1.default)((req, res) => __
     });
 }));
 const dealerOfferRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // Get all DealerRequests for this dealer
+    // Get all DealerRequests for this dealer, include listingId field
     const dealerRequests = yield dealerRequest_model_1.DealerRequest.find({
         dealerId: new mongoose_1.Types.ObjectId(req.user._id),
-    }).select("_id");
+    }).select("listingId");
     // Extract all listingIds that the dealer has already requested
-    const requestedListingIds = dealerRequests.map((req) => req.listingId.toString());
+    const requestedListingIds = dealerRequests.map((req) => { var _a; return (_a = req.listingId) === null || _a === void 0 ? void 0 : _a.toString(); });
     // Find listings with "Pre-Approval" status AND not already requested by this dealer
     const listings = yield listing_model_1.default.find({
         status: "Pre-Approval",
@@ -206,8 +206,8 @@ const getPreApprovalListing = (0, catchAsync_1.default)((req, res) => __awaiter(
     const listing = yield listing_model_1.default.find({
         status: "Pre-Approval",
     })
-        .populate("requestId", "_id budget")
-        .populate("userId")
+        .populate("requestId")
+        .populate("userId", "_id fullName email")
         .sort({ createdAt: "desc" });
     (0, sendResponse_1.default)(res, {
         data: listing,

@@ -18,33 +18,33 @@ const addDepositPaid = catchAsync(async (req, res) => {
     session.startTransaction();
 
     const request = await Request.findById(req?.body?.requestId)
-      .select("_id timeline")
+      .select("_id")
       .session(session);
 
     if (!request) {
       throw new AppError(httpStatus.NOT_FOUND, "Request not found!");
     }
 
-    const listing = await Listing.findById(req?.body?.listingId)
-      .select("_id status")
-      .session(session);
+    // const listing = await Listing.findById(req?.body?.listingId)
+    //   .select("_id status")
+    //   .session(session);
 
-    if (!listing) {
-      throw new AppError(httpStatus.NOT_FOUND, "Listing not found!");
-    }
+    // if (!listing) {
+    //   throw new AppError(httpStatus.NOT_FOUND, "Listing not found!");
+    // }
 
-    if (listing.status !== "Approved") {
-      await Listing.findByIdAndUpdate(
-        req.body?.listingId,
-        {
-          status: "Approved",
-        },
-        {
-          new: true,
-          session,
-        }
-      );
-    }
+    // if (listing.status !== "Approved") {
+    //   await Listing.findByIdAndUpdate(
+    //     req.body?.listingId,
+    //     {
+    //       status: "Approved",
+    //     },
+    //     {
+    //       new: true,
+    //       session,
+    //     }
+    //   );
+    // }
 
     await Timeline.create(
       [
@@ -85,6 +85,30 @@ const addDepositPaid = catchAsync(async (req, res) => {
     session.endSession();
     throw error;
   }
+});
+
+const rejectOffer = catchAsync(async (req, res) => {
+  const request = await Request.findById(req?.body?.requestId).select("_id ");
+
+  if (!request) {
+    throw new AppError(httpStatus.NOT_FOUND, "Request not found!");
+  }
+
+  const offerId = nanoid(6);
+
+  // Create DealerRequest with the same session
+  const result = await DealerRequest.create({
+    ...req.body,
+    offerId,
+    status: "reject",
+  });
+
+  sendResponse(res, {
+    data: result,
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Offer reject successfully!",
+  });
 });
 
 const viewDepositDetails = catchAsync(async (req, res) => {
@@ -250,4 +274,5 @@ export const dealerRequestController = {
   updateAuctionStatus,
   getSubmitedPrices,
   getSubmitedPricesByRequestId,
+  rejectOffer,
 };
