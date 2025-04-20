@@ -204,7 +204,7 @@ const updateListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 const getPreApprovalListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const listing = yield listing_model_1.default.find({
-        status: "Pre-Approval",
+        status: { $in: ["Approved", "Pre-Approval"] },
     })
         .populate("requestId")
         .populate("userId", "_id fullName email")

@@ -223,7 +223,7 @@ const updateListing = catchAsync(async (req, res) => {
 
 const getPreApprovalListing = catchAsync(async (req, res) => {
   const listing = await Listing.find({
-    status: "Pre-Approval",
+    status: { $in: ["Approved", "Pre-Approval"] },
   })
     .populate("requestId")
     .populate("userId", "_id fullName email")
