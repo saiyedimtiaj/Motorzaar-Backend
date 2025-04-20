@@ -45,10 +45,11 @@ const request_model_1 = __importDefault(require("../request/request.model"));
 const AppError_1 = require("../../errors/AppError");
 const dealerRequest_model_1 = require("./dealerRequest.model");
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
+const listing_model_1 = __importDefault(require("../listing/listing.model"));
 const nanoid_1 = require("nanoid");
 const timeline_modal_1 = __importDefault(require("../timeline/timeline.modal"));
 const addDepositPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
@@ -58,28 +59,24 @@ const addDepositPaid = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         if (!request) {
             throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Request not found!");
         }
-        // const listing = await Listing.findById(req?.body?.listingId)
-        //   .select("_id status")
-        //   .session(session);
-        // if (!listing) {
-        //   throw new AppError(httpStatus.NOT_FOUND, "Listing not found!");
-        // }
-        // if (listing.status !== "Approved") {
-        //   await Listing.findByIdAndUpdate(
-        //     req.body?.listingId,
-        //     {
-        //       status: "Approved",
-        //     },
-        //     {
-        //       new: true,
-        //       session,
-        //     }
-        //   );
-        // }
+        const listing = yield listing_model_1.default.findById((_b = req === null || req === void 0 ? void 0 : req.body) === null || _b === void 0 ? void 0 : _b.listingId)
+            .select("_id status")
+            .session(session);
+        if (!listing) {
+            throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "Listing not found!");
+        }
+        if (listing.status !== "Approved") {
+            yield listing_model_1.default.findByIdAndUpdate((_c = req.body) === null || _c === void 0 ? void 0 : _c.listingId, {
+                status: "Approved",
+            }, {
+                new: true,
+                session,
+            });
+        }
         yield timeline_modal_1.default.create([
             {
                 status: "price-submitted",
-                note: `price-submitted ${(_b = req.body) === null || _b === void 0 ? void 0 : _b.allInPrice}`,
+                note: `price-submitted ${(_d = req.body) === null || _d === void 0 ? void 0 : _d.allInPrice}`,
                 date: new Date(),
                 requestId: request === null || request === void 0 ? void 0 : request._id,
             },

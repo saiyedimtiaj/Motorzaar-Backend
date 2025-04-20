@@ -25,26 +25,26 @@ const addDepositPaid = catchAsync(async (req, res) => {
       throw new AppError(httpStatus.NOT_FOUND, "Request not found!");
     }
 
-    // const listing = await Listing.findById(req?.body?.listingId)
-    //   .select("_id status")
-    //   .session(session);
+    const listing = await Listing.findById(req?.body?.listingId)
+      .select("_id status")
+      .session(session);
 
-    // if (!listing) {
-    //   throw new AppError(httpStatus.NOT_FOUND, "Listing not found!");
-    // }
+    if (!listing) {
+      throw new AppError(httpStatus.NOT_FOUND, "Listing not found!");
+    }
 
-    // if (listing.status !== "Approved") {
-    //   await Listing.findByIdAndUpdate(
-    //     req.body?.listingId,
-    //     {
-    //       status: "Approved",
-    //     },
-    //     {
-    //       new: true,
-    //       session,
-    //     }
-    //   );
-    // }
+    if (listing.status !== "Approved") {
+      await Listing.findByIdAndUpdate(
+        req.body?.listingId,
+        {
+          status: "Approved",
+        },
+        {
+          new: true,
+          session,
+        }
+      );
+    }
 
     await Timeline.create(
       [
