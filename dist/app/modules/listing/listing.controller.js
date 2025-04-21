@@ -142,25 +142,58 @@ const dealerOfferRequest = (0, catchAsync_1.default)((req, res) => __awaiter(voi
 }));
 const getUserListing = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const listing = yield listing_model_1.default.find({
-        userId: new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id),
-        status: { $nin: ["Pending", "Pre-Approval"] },
-    }).populate("requestId", "_id budget");
-    // Get all listing IDs
-    const listingIds = listing.map((item) => item._id);
-    const listingRequest = yield dealerRequest_model_1.DealerRequest.find({
-        listingId: { $in: listingIds },
-    }).select("_id listingId allInPrice");
-    const allInPrice = listingRequest === null || listingRequest === void 0 ? void 0 : listingRequest.map((list) => list.allInPrice);
-    const min = Math.min(...allInPrice);
-    const max = Math.min(...allInPrice);
-    const result = listing.map((list) => {
-        const matchCount = listingRequest.filter((req) => req.listingId.toString() === list._id.toString()).length;
-        return Object.assign(Object.assign({}, list.toObject()), { count: matchCount, min,
-            max });
-    });
+    const userId = new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id);
+    const listings = yield listing_model_1.default.aggregate([
+        {
+            $match: {
+                userId,
+                status: { $nin: ["Pending", "Pre-Approval"] },
+            },
+        },
+        {
+            $lookup: {
+                from: "dealerrequests",
+                localField: "_id",
+                foreignField: "listingId",
+                as: "dealerRequests",
+            },
+        },
+        {
+            $addFields: {
+                count: { $size: "$dealerRequests" },
+                allInPrices: "$dealerRequests.allInPrice",
+            },
+        },
+        {
+            $addFields: {
+                min: {
+                    $cond: [
+                        { $gt: [{ $size: "$allInPrices" }, 0] },
+                        { $min: "$allInPrices" },
+                        null,
+                    ],
+                },
+                max: {
+                    $cond: [
+                        { $gt: [{ $size: "$allInPrices" }, 0] },
+                        { $max: "$allInPrices" },
+                        null,
+                    ],
+                },
+            },
+        },
+        {
+            $sort: { createdAt: -1 },
+        },
+        {
+            $project: {
+                dealerRequests: 0,
+                allInPrices: 0,
+            },
+        },
+    ]);
     (0, sendResponse_1.default)(res, {
-        data: result,
+        data: listings,
         success: true,
         statusCode: http_status_1.default.OK,
         message: "Listings retrieved successfully!",

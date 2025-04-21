@@ -148,11 +148,12 @@ const customerOffers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     const result = yield dealerRequest_model_1.DealerRequest.find({
         userId: new mongoose_1.Types.ObjectId((_a = req.user) === null || _a === void 0 ? void 0 : _a._id),
         status: {
-            $in: ["Deposit Paid", "auction-won", "ready", "Auction Lost"],
+            $in: ["Deposit Paid", "auction-won", "ready", "Auction Lost", "Approved"],
         },
     })
         .populate("listingId")
-        .populate("dealerId", "_id email phone");
+        .populate("dealerId", "_id email phone")
+        .sort({ createdAt: "desc" });
     (0, sendResponse_1.default)(res, {
         data: result,
         success: true,

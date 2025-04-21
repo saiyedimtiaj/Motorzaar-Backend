@@ -141,11 +141,12 @@ const customerOffers = catchAsync(async (req, res) => {
   const result = await DealerRequest.find({
     userId: new Types.ObjectId(req.user?._id),
     status: {
-      $in: ["Deposit Paid", "auction-won", "ready", "Auction Lost"],
+      $in: ["Deposit Paid", "auction-won", "ready", "Auction Lost", "Approved"],
     },
   })
     .populate("listingId")
-    .populate("dealerId", "_id email phone");
+    .populate("dealerId", "_id email phone")
+    .sort({ createdAt: "desc" });
 
   sendResponse(res, {
     data: result,

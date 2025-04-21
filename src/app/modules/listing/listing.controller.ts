@@ -137,37 +137,59 @@ const dealerOfferRequest = catchAsync(async (req, res) => {
 });
 
 const getUserListing = catchAsync(async (req, res) => {
-  const listing = await Listing.find({
-    userId: new Types.ObjectId(req.user?._id),
-    status: { $nin: ["Pending", "Pre-Approval"] },
-  }).populate("requestId", "_id budget");
+  const userId = new Types.ObjectId(req.user?._id);
 
-  // Get all listing IDs
-  const listingIds = listing.map((item) => item._id);
-
-  const listingRequest = await DealerRequest.find({
-    listingId: { $in: listingIds },
-  }).select("_id listingId allInPrice");
-
-  const allInPrice = listingRequest?.map((list) => list.allInPrice);
-  const min = Math.min(...allInPrice);
-  const max = Math.min(...allInPrice);
-
-  const result = listing.map((list) => {
-    const matchCount = listingRequest.filter(
-      (req) => req.listingId.toString() === list._id.toString()
-    ).length;
-
-    return {
-      ...list.toObject(),
-      count: matchCount,
-      min,
-      max,
-    };
-  });
-
+  const listings = await Listing.aggregate([
+    {
+      $match: {
+        userId,
+        status: { $nin: ["Pending", "Pre-Approval"] },
+      },
+    },
+    {
+      $lookup: {
+        from: "dealerrequests",
+        localField: "_id",
+        foreignField: "listingId",
+        as: "dealerRequests",
+      },
+    },
+    {
+      $addFields: {
+        count: { $size: "$dealerRequests" },
+        allInPrices: "$dealerRequests.allInPrice",
+      },
+    },
+    {
+      $addFields: {
+        min: {
+          $cond: [
+            { $gt: [{ $size: "$allInPrices" }, 0] },
+            { $min: "$allInPrices" },
+            null,
+          ],
+        },
+        max: {
+          $cond: [
+            { $gt: [{ $size: "$allInPrices" }, 0] },
+            { $max: "$allInPrices" },
+            null,
+          ],
+        },
+      },
+    },
+    {
+      $sort: { createdAt: -1 },
+    },
+    {
+      $project: {
+        dealerRequests: 0,
+        allInPrices: 0,
+      },
+    },
+  ]);
   sendResponse(res, {
-    data: result,
+    data: listings,
     success: true,
     statusCode: httpStatus.OK,
     message: "Listings retrieved successfully!",
